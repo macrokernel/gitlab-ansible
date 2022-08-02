@@ -1,0 +1,85 @@
+---
+- block:
+  - name: Create {{ docker_gitlab_runner_env_location }}
+    file:
+      path: "{{ docker_gitlab_runner_env_location }}"
+      state: directory
+
+  - name: Template and copy over the gitlab-runner.env over
+    template:
+      src: "{{ docker_gitlab_runner_env_template }}"
+      dest: "{{ docker_gitlab_runner_env_location }}/{{ docker_gitlab_runner_env_file_name }}"
+      owner: root
+      group: root
+      mode: 0644
+  when: docker_gitlab_runner_env_template|default("") != ""
+
+- block:
+  - name: Create {{ docker_gitlab_runner_docker_compose_location }}
+    file:
+      path: "{{ docker_gitlab_runner_docker_compose_location }}"
+      state: directory
+
+  - name: Template and copy over the docker-compose file
+    template:
+      src: "{{ docker_gitlab_runner_docker_compose_template }}"
+      dest: "{{ docker_gitlab_runner_docker_compose_location }}/{{ docker_gitlab_runner_docker_compose_file_name }}"
+      owner: root
+      group: root
+      mode: 0644
+  when: docker_gitlab_runner_docker_compose_template|default("") != ""
+
+- block:
+  - name: Unregister GitLab runner
+    ansible.builtin.shell:
+      cmd: docker-compose exec gitlab-runner gitlab-runner unregister --all-runners || true
+      chdir: "{{ docker_gitlab_runner_env_location }}"
+
+  - name: Remove old "{{ docker_gitlab_runner_env_location }}/etc/config.toml"
+    file:
+      path: "{{ docker_gitlab_runner_env_location }}/etc/config.toml"
+      state: absent
+  when: docker_gitlab_runner_env_location|default("") != ""
+
+- block:
+  - name: Wait up to 7 minutes for https://{{ gitlab_server_address }} to become online
+    ansible.builtin.uri:
+      url: "https://{{ gitlab_server_address }}/"
+      status_code: 200
+    register: result
+    until: result.status == 200
+    retries: 42
+    delay: 10
+    ignore_errors: yes
+
+- block:
+  - name: Create {{ docker_gitlab_runner_service_location }}
+    file:
+      path: "{{ docker_gitlab_runner_service_location }}"
+      state: directory
+
+  - name: Template and copy over the systemd service file
+    template:
+      src: "{{ docker_gitlab_runner_service_template }}"
+      dest: "{{ docker_gitlab_runner_service_location }}/{{ docker_gitlab_runner_service_name }}.service"
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: Reload systemd
+    systemd:
+      state: restarted
+      daemon_reload: yes
+      enabled: yes
+      name: "{{ docker_gitlab_runner_service_name }}"
+  when: (docker_gitlab_runner_service_template|default("") != "") and (ansible_service_mgr == "systemd")
+
+- block:
+  - name: Create docker prune cron job
+    ansible.builtin.cron:
+      name: "Prune docker"
+      hour: "{{ gitlab_runner_prune_cron_hour }}"
+      minute: "{{ gitlab_runner_prune_cron_minute }}"
+      user: root
+      job: "/usr/bin/docker system prune -f"
+  when: (gitlab_runner_prune_cron_hour|default("") != "") and (gitlab_runner_prune_cron_minute|default("") != "")

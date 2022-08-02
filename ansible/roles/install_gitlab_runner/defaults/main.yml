@@ -1,0 +1,13 @@
+---
+docker_gitlab_runner_env_template: templates/gitlab-runner.env.j2
+docker_gitlab_runner_env_location: /opt/gitlab-runner
+docker_gitlab_runner_env_file_name: gitlab-runner.env
+
+docker_gitlab_runner_docker_compose_template: templates/gitlab-runner-docker-compose.yml.j2
+docker_gitlab_runner_docker_compose_location: /opt/gitlab-runner
+docker_gitlab_runner_docker_compose_file_name: docker-compose.yml
+docker_gitlab_runner_docker_compose_binary_full_path: /usr/local/bin/docker-compose
+
+docker_gitlab_runner_service_template: templates/gitlab-runner-docker.service.j2
+docker_gitlab_runner_service_location: /etc/systemd/system
+docker_gitlab_runner_service_name: gitlab-runner-docker

@@ -1,0 +1,35 @@
+#!/bin/bash
+set -e
+
+# This script configures those stuff, which can't be configured via GITLAB_OMNIBUS_CONFIG.
+# The gitlab-rails console can be started on the host via
+# > docker exec -it gitlab gitlab-rails console
+
+gitlab-rails runner - <<EOS
+# - Monday is the first day of week... what else?!
+ApplicationSetting.last.update(first_day_of_week: 1)
+
+# - https://docs.gitlab.com/ee/user/admin_area/settings/sign_in_restrictions.html#admin-mode
+ApplicationSetting.last.update(admin_mode: true)
+
+# - disable auto-devops (required by Docker-in-Docker, but I've security concerns)
+ApplicationSetting.last.update(auto_devops_enabled: false)
+
+# - disable signup: https://gitlab.com/gitlab-org/omnibus-gitlab/-/issues/2837
+ApplicationSetting.last.update(signup_enabled: false)
+
+# - disable default login, as we are using LDAP only
+#ApplicationSetting.last.update(password_authentication_enabled_for_web: false)
+
+# - configure allowed to login user email domains
+ApplicationSetting.last.update(domain_allowlist: ["{{ gitlab_smtp_domain }}"])
+
+# - change email address of user root
+if user = User.find_by_username('root')
+    user.email = '{{ gitlab_email_address }}'
+    user.skip_reconfirmation!
+    user.save!
+end
+EOS
+
+echo "Post Reconfigure Script successfully executed"

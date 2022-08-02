@@ -1,0 +1,22 @@
+version: '3.5'
+
+services:
+  gitlab:
+    restart: unless-stopped
+    container_name: gitlab
+    image: gitlab/gitlab-ce:14.9.1-ce.0
+    environment:
+      - GITLAB_POST_RECONFIGURE_SCRIPT="/etc/gitlab/gitlab-post-reconfigure.sh"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "2222:22"
+      - "5050:5050"
+    volumes:
+      - /opt/gitlab/etc:/etc/gitlab
+      - /opt/gitlab/var/log:/var/log/gitlab
+      - /opt/gitlab/var/opt:/var/opt/gitlab
+
+networks:
+  default:
+    name: gitlab

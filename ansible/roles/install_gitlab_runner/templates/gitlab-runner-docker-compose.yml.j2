@@ -1,0 +1,61 @@
+version: '3.5'
+
+services:
+  gitlab-runner-register:
+    restart: "no"
+    container_name: gitlab-runner-register
+    image: gitlab/gitlab-runner:alpine3.12-v14.9.1
+    # Changed entrypoint to a mini bash script to ensure that multiple registrations don't happen
+    # Checks if config.toml exists, which means either it was placed there as part of bootstrapping
+    # or manufactured using the "gitlab-runner register" command
+    #
+    # GitLab runner does not support setting 'concurrency' parameter with environment variables
+    # or command line parameters, therefore config.toml should be patched with sed after registration
+    entrypoint: >
+      bash -c
+      "if [[ -r /etc/gitlab-runner/config.toml ]]; then
+        echo 'config.toml foud, therefore it is already registered or config has been placed there';
+        exit 0;
+      else
+        echo 'config.toml not foud, registering runner';
+        gitlab-runner register -n;
+        echo 'setting concurrent = {{ gitlab_runner_concurrent }} in config.toml'
+        sed \"s|^concurrent = .*|concurrent = {{ gitlab_runner_concurrent }}|\" -i /etc/gitlab-runner/config.toml
+      fi"
+    # Ensure the same volumes are used for the actual runner instance below
+    volumes:
+      - /opt/gitlab-runner/etc:/etc/gitlab-runner
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - RUNNER_TAG_LIST="docker"
+      - RUNNER_NAME=gitlab-runner
+      # - RUNNER_LIMIT=2
+      # - RUNNER_REQUEST_CONCURRENCY=4
+      - CI_SERVER_URL=https://{{ gitlab_server_address }}
+      - REGISTER_LOCKED=false
+      - REGISTER_NON_INTERACTIVE=true
+      - RUNNER_EXECUTOR=docker
+      - DOCKER_IMAGE=alpine:latest
+      # - DOCKER_CPUSET_CPUS=0,1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - DOCKER_WAIT_FOR_SERVICES_TIMEOUT=30
+      - DOCKER_PULL_POLICY=always
+      - DOCKER_PRIVILEGED=true
+      - DOCKER_VOLUMES=/var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - /opt/gitlab-runner/gitlab-runner.env
+
+  gitlab-runner:
+    restart: unless-stopped
+    container_name: gitlab-runner
+    image: gitlab/gitlab-runner:alpine3.12-v14.9.1
+    depends_on:
+      - gitlab-runner-register
+    # Ensure the same volumes are used as the register instance above
+    volumes:
+      - /opt/gitlab-runner/etc:/etc/gitlab-runner
+      - /var/run/docker.sock:/var/run/docker.sock
+      
+networks:
+  default:
+    name: gitlab_runner

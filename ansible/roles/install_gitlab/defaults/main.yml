@@ -1,0 +1,17 @@
+---
+docker_gitlab_gitlab_rb_template: templates/gitlab.rb.j2
+docker_gitlab_gitlab_rb_location: /opt/gitlab/etc
+docker_gitlab_gitlab_rb_file_name: gitlab.rb
+
+docker_gitlab_gitlab_reconfigure_template: templates/gitlab-post-reconfigure.sh.j2
+docker_gitlab_gitlab_reconfigure_location: /opt/gitlab/etc
+docker_gitlab_gitlab_reconfigure_file_name: gitlab-post-reconfigure.sh
+
+docker_gitlab_docker_compose_template: templates/gitlab-docker-compose.yml.j2
+docker_gitlab_docker_compose_location: /opt/gitlab
+docker_gitlab_docker_compose_file_name: docker-compose.yml
+docker_gitlab_docker_compose_binary_full_path: /usr/local/bin/docker-compose
+
+docker_gitlab_service_template: templates/gitlab-docker.service.j2
+docker_gitlab_service_location: /etc/systemd/system
+docker_gitlab_service_name: gitlab-docker

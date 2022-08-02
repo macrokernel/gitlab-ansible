@@ -1,0 +1,102 @@
+---
+- block:
+  - name: Install packages
+    apt:
+      state: present
+      name:
+       - awscli
+
+- block:
+  - name: Configure AWS CLI
+    ansible.builtin.command: aws configure set --profile yandex-cloud-s3 {{ item }}
+    with_items:
+      - aws_access_key_id {{ s3_access_key }}
+      - aws_secret_access_key {{ s3_secret_key }}
+      - region {{ s3_region }}
+
+- block:
+  - name: Create {{ docker_gitlab_gitlab_rb_location }}
+    file:
+      path: "{{ docker_gitlab_gitlab_rb_location }}"
+      state: directory
+
+  - name: Template and copy over the gitlab.rb over
+    template:
+      src: "{{ docker_gitlab_gitlab_rb_template }}"
+      dest: "{{ docker_gitlab_gitlab_rb_location }}/{{ docker_gitlab_gitlab_rb_file_name }}"
+      owner: root
+      group: root
+      mode: 0644
+  when: docker_gitlab_gitlab_rb_template|default("") != ""
+
+- block:
+  - name: Create {{ docker_gitlab_gitlab_reconfigure_location }}
+    file:
+      path: "{{ docker_gitlab_gitlab_reconfigure_location }}"
+      state: directory
+
+  - name: Template and copy over the gitlab-post-reconfigure.sh over
+    template:
+      src: "{{ docker_gitlab_gitlab_reconfigure_template }}"
+      dest: "{{ docker_gitlab_gitlab_reconfigure_location }}/{{ docker_gitlab_gitlab_reconfigure_file_name }}"
+      owner: root
+      group: root
+      mode: 0755
+  when: docker_gitlab_gitlab_rb_template|default("") != ""
+
+- block:
+  - name: Create {{ docker_gitlab_docker_compose_location }}
+    file:
+      path: "{{ docker_gitlab_docker_compose_location }}"
+      state: directory
+
+  - name: Template and copy over the docker-compose file
+    template:
+      src: "{{ docker_gitlab_docker_compose_template }}"
+      dest: "{{ docker_gitlab_docker_compose_location }}/{{ docker_gitlab_docker_compose_file_name }}"
+      owner: root
+      group: root
+      mode: 0644
+  when: docker_gitlab_docker_compose_template|default("") != ""
+
+- block:
+  - name: Create {{ docker_gitlab_service_location }}
+    file:
+      path: "{{ docker_gitlab_service_location }}"
+      state: directory
+
+  - name: Template and copy over the systemd service file
+    template:
+      src: "{{ docker_gitlab_service_template }}"
+      dest: "{{ docker_gitlab_service_location }}/{{ docker_gitlab_service_name }}.service"
+      owner: root
+      group: root
+      mode: 0644
+
+  - name: Reload systemd
+    systemd:
+      state: restarted
+      daemon_reload: yes
+      enabled: yes
+      name: "{{ docker_gitlab_service_name }}"
+  when: (docker_gitlab_service_template|default("") != "") and (ansible_service_mgr == "systemd")
+
+- block:
+  - name: Create GitLab data backup cron job
+    cron:
+      name: "Backup GitLab data"
+      day: "{{ gitlab_backup_cron_day }}"
+      hour: "{{ gitlab_backup_cron_hour }}"
+      minute: "{{ gitlab_backup_cron_minute }}"
+      job: "cd {{ docker_gitlab_docker_compose_location }} && /usr/local/bin/docker-compose exec -T gitlab {{ docker_gitlab_docker_compose_location }}/bin/gitlab-backup create STRATEGY=copy >/var/log/backup-gitlab-data.log 2>&1"
+  when: (gitlab_backup_cron_day|default("") != "") and (gitlab_backup_cron_hour|default("") != "") and (gitlab_backup_cron_minute|default("") != "")
+
+- block:
+  - name: Create GitLab configuration backup cron job
+    cron:
+      name: "Backup GitLab configuration"
+      day: "{{ gitlab_backup_cron_day }}"
+      hour: "{{ gitlab_backup_cron_hour }}"
+      minute: "{{ gitlab_backup_cron_minute }}"
+      job: "(name=$(date +\\%s_\\%Y_\\%m_\\%d)_gitlab_config_backup.tar.gz && tar czf {{ docker_gitlab_docker_compose_location }}/$name {{ docker_gitlab_gitlab_rb_location }} && aws --profile yandex-cloud-s3 --endpoint-url={{ s3_endpoint }} s3 cp {{ docker_gitlab_docker_compose_location }}/$name {{ s3_backup_path }}) >/var/log/backup-gitlab-config.log 2>&1"
+  when: (gitlab_backup_cron_day|default("") != "") and (gitlab_backup_cron_hour|default("") != "") and (gitlab_backup_cron_minute|default("") != "") and (s3_endpoint|default("") != "") and (s3_backup_path|default("") != "")
