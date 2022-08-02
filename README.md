@@ -7,15 +7,12 @@
 
 1. Установить локально ansible и git
 2. Клонировать репозиторий локально
-3. Если установка новая:
- - Сгенерировать конфигурационные файлы (**ansible/inventory.ini** и **ansible/group_vars/all.yml**), выполнив команду:
+3. Сгенерировать конфигурационные файлы (**ansible/inventory.ini** и **ansible/group_vars/all.yml**), выполнив команду:
 ```shell
 ansible-playbook 0_generate_configs.yml
 ```
  - Отредактировать **ansible/inventory.ini**, указав адреса IP или DNS и имена пользователей целевых узлов
  - Отредактировать **ansible/group_vars/all.yml**, указав параметры развертывания
-4. Если установка существующая:
- - Скопировать существующие конфигурационные файлы (**ansible/inventory.ini** и **ansible/group_vars/all.yml**)
 
 
 ## Новое развёртывание
