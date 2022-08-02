@@ -5,9 +5,8 @@
 
 ## Подготовка
 
-1. Установить локально ansible и git
-2. Клонировать репозиторий локально
-3. Сгенерировать конфигурационные файлы (**ansible/inventory.ini** и **ansible/group_vars/all.yml**), выполнив команду:
+1. На целевых узлах разрешить беспарольное использование команды **sudo** для пользователя **ansible_user**.
+2. Сгенерировать конфигурационные файлы (**ansible/inventory.ini** и **ansible/group_vars/all.yml**), выполнив команду:
 ```shell
 ansible-playbook 0_generate_configs.yml
 ```
@@ -17,18 +16,17 @@ ansible-playbook 0_generate_configs.yml
 
 ## Новое развёртывание
 
-1. На целевых узлах разрешить беспарольное использование команды **sudo** для пользователя **ansible_user**.
-2. Выполнить последовательность команд:
+1. Выполнить последовательность команд:
 ```shell
 cd ./ansible
 ansible-playbook -i inventory.ini 2_configure_ufw.yml
 ansible-playbook -i inventory.ini 3_install_docker.yml
 ```
-3. Проверить параматры GitLab в файле шаблона **ansible/roles/install_gitlab/templates/gitlab.rb.j2**. Параметры GitLab, определённые в означенном файле шаблона приведены в Приложении 1.
-4. Проверить сценарий настройки GitLab после установки в файле шаблона **ansible/roles/install_gitlab/templates/gitlab-post-reconfigure.sh.j2**. В частности, команду **ApplicationSetting.last.update(domain_allowlist: ["{{ gitlab_smtp_domain }}"])**, устанавливающую перечень доменов email, для которых разрешён вход в GitLab.
-5. Для того, чтобы GitLab мог отправлять email через Yandex, необходимо войти в веб-интерфейс почты Yandex с учётной записью почты GitLab и принять условия EULA.  
+2. Проверить параматры GitLab в файле шаблона **ansible/roles/install_gitlab/templates/gitlab.rb.j2**. Параметры GitLab, определённые в означенном файле шаблона приведены в Приложении 1.
+3. Проверить сценарий настройки GitLab после установки в файле шаблона **ansible/roles/install_gitlab/templates/gitlab-post-reconfigure.sh.j2**. В частности, команду **ApplicationSetting.last.update(domain_allowlist: ["{{ gitlab_smtp_domain }}"])**, устанавливающую перечень доменов email, для которых разрешён вход в GitLab.
+4. Для того, чтобы GitLab мог отправлять email через Yandex, необходимо войти в веб-интерфейс почты Yandex с учётной записью почты GitLab и принять условия EULA.  
 Указать пароль учётной записи электронной почты GitLab в параметре **gitlab_smtp_password** файла **ansible/group_vars/all.yml**.
-6. Для того, чтобы GitLab мог загружать бэкапы в хранилище S3 в облаке Yandex, необходимо войти в панель управления облака Yandex с учётной записью администратора и создать сервисный аккаунт для работы с бэкапами GitLab:  
+5. Для того, чтобы GitLab мог загружать бэкапы в хранилище S3 в облаке Yandex, необходимо войти в панель управления облака Yandex с учётной записью администратора и создать сервисный аккаунт для работы с бэкапами GitLab:  
   **Имя: gitlab-backup**  
   **Роль: storage.editor**  
 Затем создать статический ключ доступа для данного сервисного аккаунта.  
@@ -37,23 +35,23 @@ ansible-playbook -i inventory.ini 3_install_docker.yml
 s3_access_key: "AKIAKIAKI"
 s3_secret_key: "secret123"
 ```
-7. Для интеграции GitLab с сервисом аутентификации Yandex Passport необходимо определить следующие параматры в файле **ansible/group_vars/all.yml**:
+6. Для интеграции GitLab с сервисом аутентификации Yandex Passport необходимо определить следующие параматры в файле **ansible/group_vars/all.yml**:
 ```yaml
 oauth_app_id: "EXAMPLEAPPID"
 oauth_app_secret: "EXAMPLESECRET"
 ```
-8. Для обеспечения возможности регистрации GitLab runner необходимо сгенерировать случуайную строку, состоящую из 20 букв различного регистра и цифр, и указать её в качестве значения параметра **gitlab_runner_initial_registration_token** в файле **ansible/group_vars/all.yml**. Для генерации случуайной строки можно воспользоваться командой
+7. Для обеспечения возможности регистрации GitLab runner необходимо сгенерировать случуайную строку, состоящую из 20 букв различного регистра и цифр, и указать её в качестве значения параметра **gitlab_runner_initial_registration_token** в файле **ansible/group_vars/all.yml**. Для генерации случуайной строки можно воспользоваться командой
 ```shell
 tr -cd '[:alnum:]' < /dev/urandom | fold -20 | head -n1
 ```
-9. Для установки GitLab выполнить команду
+8. Для установки GitLab выполнить команду
 ```shell
 ansible-playbook -i inventory.ini 4_install_gitlab.yml
 ```
-10. Временный пароль администратора для первого входа в веб-интерфейс GitLab содержится в файле **/opt/gitlab/etc/initial_root_password** на сервере GitLab, пользователь - **root**. Данный пароль действует в течение 24 часов после установки GitLab.
+9. Временный пароль администратора для первого входа в веб-интерфейс GitLab содержится в файле **/opt/gitlab/etc/initial_root_password** на сервере GitLab, пользователь - **root**. Данный пароль действует в течение 24 часов после установки GitLab.
 После установки необходимо назначить как минимум одного пользователя GitLab администратором. Для этого следует войти в интерфейс GitLab посредством Yandex Passport с учётной записью пользователя, которому требуется предоставить полномочия администратора, для того, чтобы означенный пользователь был добавлен в базу данных GitLab, затем выйти из интерфейса GitLab. После чего войти в интерфейс GitLab с учётной записью **root**, перейти в раздел https://gitlab.example.com/admin/users и изменить уровень доступа пользователя на **Administrator**. Далее, выйти из интерфейса GitLab и снова войти с учётной записью пользователя-администратора.  
 Затем следует запретить самостоятельную регистрацию (sign-up) пользователей и вход в веб-интерфейс GitLab по паролю (password authentication) на странице http://gitlab.example.com/admin/application_settings/general в разделах **Sign-up restrictions** и **Sign-in restrictions**, соответственно.
-11. Установку GitLab runner необходимо производить после того, как веб-интерфейс GitLab станет доступным, так как для регистрации GitLab runner требуется доступ к веб-интерфейсу GitLab.  
+10. Установку GitLab runner необходимо производить после того, как веб-интерфейс GitLab станет доступным, так как для регистрации GitLab runner требуется доступ к веб-интерфейсу GitLab.  
 Ограничение числа параллельных задач CI/CD в GitLab runner задаётся параметром **gitlab_runner_concurrent** в файле **ansible/group_vars/all.yml**, который устанавливает значение параметра **concurrent** в корневом разделе файла конфигурации GitLab runner **config.toml**.  
 Для установки и регистрации GitLab runner выполнить команду:
 ```shell
