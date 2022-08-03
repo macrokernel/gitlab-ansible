@@ -213,3 +213,41 @@ letsencrypt['auto_renew_minute'] = 10
 letsencrypt['auto_renew_day_of_month'] = "*/7"
 letsencrypt['auto_renew_log_directory'] = '/var/log/gitlab/lets-encrypt'
 ```
+
+
+## Приложение 2. Настройка Nginx reverse proxy для работы Let's Encrypt  
+При выдаче сертификата SSL служба Let's Encrypt обращается к web-серверу по URI `/.well-known/acme-challenge/` в целях проверки принадлежности домена web-серверу.  
+
+Если сервер GitLab доступен только из локальной сети и недоступен из сети Интернет, но, при этом, имеет доменное имя в сети Интернет и должен иметь сертификат SSL, то необходимо обеспечить доступ серверов службы Let's Encrypt к порту 80/tcp сервера GitLab.
+
+Доступ Let's Encrypt к серверу GitLab может быть реализован посредством NAT port forwarding на граничном маршрутизаторе локальной сети или посредстом reverse proxy на web-сервере, подключенном к сети Интернет.
+
+Ниже приведён пример настройки reverse proxy на веб-сервере Nginx.  
+```conf
+server {
+    listen 80;
+
+    server_name gitlab.example.com;
+    access_log /var/log/nginx/gitlab.example.com.access_log;
+    error_log /var/log/nginx/gitlab.example.com.error_log info;
+
+    # Let's Encrypt
+    location ^~ /.well-known/acme-challenge/ {
+        default_type "text/plain";
+
+        proxy_pass http://gitlab.example.com; # GitLab server internal address
+        proxy_read_timeout 3600s;
+        proxy_http_version 1.1;
+
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Server $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+        allow all;
+    }
+
+    location / {
+        deny all;
+    }
+}
+```
