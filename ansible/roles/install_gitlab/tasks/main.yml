@@ -98,7 +98,7 @@
       day: "{{ gitlab_backup_cron_day }}"
       hour: "{{ gitlab_backup_cron_hour }}"
       minute: "{{ gitlab_backup_cron_minute }}"
-      job: "(name=$(date +\\%s_\\%Y_\\%m_\\%d)_gitlab_config_backup.tar.gz && tar czf {{ docker_gitlab_docker_compose_location }}/$name {{ docker_gitlab_gitlab_rb_location }} && aws --profile yandex-cloud-s3 --endpoint-url={{ s3_endpoint }} s3 cp {{ docker_gitlab_docker_compose_location }}/$name {{ s3_backup_path }}) >/var/log/backup-gitlab-config.log 2>&1"
+      job: "(name=$(date +\\%s_\\%Y_\\%m_\\%d)_gitlab_config_backup.tar.gz && tar czf {{ docker_gitlab_docker_compose_location }}/$name {{ docker_gitlab_gitlab_rb_location }} && aws --profile yandex-cloud-s3 --endpoint-url={{ s3_endpoint }} s3 cp {{ docker_gitlab_docker_compose_location }}/$name {{ s3_backup_path }} && rm {{ docker_gitlab_docker_compose_location }}/$name) >/var/log/backup-gitlab-config.log 2>&1"
   when: (gitlab_backup_cron_day|default("") != "") and (gitlab_backup_cron_hour|default("") != "") and (gitlab_backup_cron_minute|default("") != "") and (s3_endpoint|default("") != "") and (s3_backup_path|default("") != "")
 
 - block:
