@@ -691,8 +691,8 @@ gitlab_rails['omniauth_providers'] = [
 
 gitlab_rails['manage_backup_path'] = true
 gitlab_rails['backup_path'] = "/var/opt/gitlab/backups"
-# Keep backups 7 days
-gitlab_rails['backup_keep_time'] = 604800
+# Keep backups on local disk for 3 days
+gitlab_rails['backup_keep_time'] = 259200
 gitlab_rails['backup_upload_connection'] = {
   'provider' => 'AWS',
   'region' => '{{ s3_region }}',
