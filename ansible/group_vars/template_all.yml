@@ -20,3 +20,7 @@ s3_secret_key: ""
 s3_region: "ru-central1"
 s3_endpoint: "https://storage.yandexcloud.net/"
 s3_backup_path: "s3://backups/gitlab/"
+
+
+# === Docker Compose
+docker_compose_version: v2.9.0
