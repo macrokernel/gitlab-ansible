@@ -1,4 +1,4 @@
-# GitLab Docker Compose deployment with Yandex Mail, Yandex Passport authentication and Yandex Cloud S3 backups Ansible playbook
+# Ansible playbook for GitLab deployment in Docker Compose with Yandex Mail, Yandex Passport authentication and Yandex Cloud S3 backups
 
 Плейбук Ansible для развёртывания GitLab и GitLab runner в Docker Compose с отправкой email через Yandex Mail, аутентификацией пользователей в Yandex Passport и резервным копированием в хранилище S3 Yandex Cloud.
 
