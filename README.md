@@ -40,7 +40,7 @@ s3_secret_key: "secret123"
 oauth_app_id: "EXAMPLEAPPID"
 oauth_app_secret: "EXAMPLESECRET"
 ```
-7. Для обеспечения возможности регистрации GitLab runner необходимо сгенерировать случуайную строку, состоящую из 20 букв различного регистра и цифр, и указать её в качестве значения параметра **gitlab_runner_initial_registration_token** в файле **ansible/group_vars/all.yml**. Для генерации случуайной строки можно воспользоваться командой
+7. Для обеспечения возможности регистрации GitLab runner необходимо сгенерировать строку, состоящую из случайного набора 20 букв различного регистра и цифр, и указать её в качестве значения параметра **gitlab_runner_initial_registration_token** в файле **ansible/group_vars/all.yml**. Для генерации случуайной строки можно воспользоваться командой
 ```shell
 tr -cd '[:alnum:]' < /dev/urandom | fold -20 | head -n1
 ```
