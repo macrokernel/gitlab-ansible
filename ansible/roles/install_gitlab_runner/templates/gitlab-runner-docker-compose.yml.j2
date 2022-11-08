@@ -39,7 +39,7 @@ services:
       # - DOCKER_CPUSET_CPUS=0,1
       - DOCKER_HOST=unix:///var/run/docker.sock
       - DOCKER_WAIT_FOR_SERVICES_TIMEOUT=30
-      - DOCKER_PULL_POLICY=always
+      - DOCKER_PULL_POLICY=if-not-present
       - DOCKER_PRIVILEGED=true
       - DOCKER_VOLUMES=/var/run/docker.sock:/var/run/docker.sock
     env_file:
